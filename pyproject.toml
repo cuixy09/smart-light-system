@@ -1,0 +1,13 @@
+[project]
+name = "our-first-project"
+version = "0.1.0"
+description = "用于小组内部的天气信息爬取"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.1",
+    "parsel>=1.11.0",
+]
+
+[tool.uv]
+index-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
