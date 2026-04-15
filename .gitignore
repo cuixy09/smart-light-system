@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# C++
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# Arduino
+*.elf
+*.hex
+*.bin
+*.eep
+build-*/
+*.ino.with_bootloader*
