@@ -13,7 +13,7 @@
 
  > *Written by Senvlin*
 
-### web
+### Web
 
 1. vue页面编译
 ```bash
@@ -35,6 +35,8 @@ bun run build
 ./server
 ```
 
-### arduino
+### Arduino
 1. vscode 安装`PlatformIO IDE`插件
 2. 导入项目
+
+ > *Written by 你觉得我是谁*
