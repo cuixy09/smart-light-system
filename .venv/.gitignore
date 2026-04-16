@@ -9,7 +9,12 @@ venv/
 *.egg-info/
 dist/
 build/
-
+.lock
+CACHEDIR.TAG
+pyvenv.cfg
+.python-version
+Lib
+Scripts
 # C++
 *.o
 *.obj
