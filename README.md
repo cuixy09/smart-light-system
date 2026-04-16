@@ -12,3 +12,29 @@
     1. 那就去到源码目录, 在命令行输入`pip install -e .`
 
  > *Written by Senvlin*
+
+### web
+
+1. vue页面编译
+```bash
+cd web
+bun install
+bun run build
+```
+
+2. 服务器编译
+```bash
+cd web-server
+bun install
+bun run build
+```
+
+3. 复制vue编译文件至执行文件目录下web文件夹中
+4. 运行服务器
+```bash
+./server
+```
+
+### arduino
+1. vscode 安装`PlatformIO IDE`插件
+2. 导入项目
