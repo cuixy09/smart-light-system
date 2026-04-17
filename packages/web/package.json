@@ -12,6 +12,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "animejs": "^4.3.6",
     "vue": "^3.5.31"
   },
   "devDependencies": {
