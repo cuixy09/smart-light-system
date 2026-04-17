@@ -16,7 +16,7 @@ pyvenv.cfg
 .python-version
 Lib
 Scripts
-.code-workspace
+*.code-workspace
 # C++
 *.o
 *.obj
