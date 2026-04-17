@@ -12,6 +12,9 @@ class InfoItem:
     sunset_time: str | None
     AQI: int | None
 
+    def __post_init__(self):
+        self.AQI = int(self.AQI) if self.AQI else None
+
 
 class InfoParser:
     def __init__(self, html_str):
@@ -75,4 +78,6 @@ def grab_data(data_str: str):
             return (info.sunrise_time, info.sunset_time, info.AQI)
 
 
-grab_data("2026-04-25")
+if __name__ == "__main__":
+    a = grab_data("2026-04-01")
+    print(a)

@@ -1,3 +1,4 @@
+node_modules/
 # Python
 __pycache__/
 *.py[cod]
@@ -15,6 +16,7 @@ pyvenv.cfg
 .python-version
 Lib
 Scripts
+.code-workspace
 # C++
 *.o
 *.obj
