@@ -1,67 +1,95 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import AnimeJs from './components/AnimeJs.vue'
 import TypewriterCursor from './components/TypewriterCursor.vue'
 
-const lines = ['第一行', '第二行更长一点', 'Hello, Vue 3']
-const currentIndex = ref(0)
-
-const animeDemoParams = {
-  x: [0, 120, 0],
-  rotate: { from: '-8deg' },
-  duration: 1400,
-  ease: 'inOutQuad' as const,
-  loop: true,
-  alternate: true,
-}
-
-function nextLine() {
-  currentIndex.value = (currentIndex.value + 1) % lines.length
-}
+const heroTitle: string[] = ['路灯节能控制方案']
 </script>
 
 <template>
-  <main>
-    <h1>TypewriterCursor</h1>
-    <p>
-      <TypewriterCursor
-        :texts="lines"
-        :index="currentIndex"
-        :cursor-blink-interval-ms="530"
-        :char-interval-ms="70"
-      />
-    </p>
-    <p>
-      <button type="button" @click="nextLine">下一句（index {{ currentIndex }}）</button>
-    </p>
-
-    <section class="anime-demo">
-      <h2>AnimeJs</h2>
-      <AnimeJs :params="animeDemoParams" tag="span" class="anime-demo__box">
-        anime.js 示例
-      </AnimeJs>
-    </section>
-    <p>
-      Visit <a href="https://vuejs.org/" target="_blank" rel="noopener">vuejs.org</a> to read the
-      documentation
-    </p>
+  <main class="hero">
+    <div class="hero__glow hero__glow--one" aria-hidden="true" />
+    <div class="hero__glow hero__glow--two" aria-hidden="true" />
+    <div class="hero__content">
+      <h1 class="hero__title">
+        <TypewriterCursor
+          :texts="heroTitle"
+          :index="0"
+          :char-interval-ms="100"
+          :cursor-blink-interval-ms="530"
+        />
+      </h1>
+      <p class="hero__subtitle">模型展示</p>
+    </div>
   </main>
 </template>
 
 <style scoped>
-main {
-  padding: 1rem;
+.hero {
+  position: relative;
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow: hidden;
+  background: linear-gradient(180deg, #fafdfb 0%, #f3f7f2 45%, #eef3ec 100%);
 }
 
-.anime-demo {
-  margin-top: 1.5rem;
+.hero__glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  pointer-events: none;
 }
 
-.anime-demo__box {
-  display: inline-block;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  background: #1a1a2e;
-  color: #eee;
+.hero__glow--one {
+  width: min(72vw, 420px);
+  height: min(72vw, 420px);
+  top: -10%;
+  right: -8%;
+  background: radial-gradient(circle, #c8d9c0 0%, transparent 70%);
+}
+
+.hero__glow--two {
+  width: min(90vw, 520px);
+  height: min(90vw, 520px);
+  bottom: -18%;
+  left: -12%;
+  background: radial-gradient(circle, #a3b899 0%, transparent 65%);
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 42rem;
+}
+
+.hero__title {
+  margin: 0;
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #3d5a42;
+  line-height: 1.35;
+}
+
+.hero__subtitle {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: #6b8570;
+  letter-spacing: 0.12em;
+}
+</style>
+
+<style>
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
 }
 </style>
