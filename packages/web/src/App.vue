@@ -8,42 +8,29 @@ const texts: string[] = ['路灯节能控制方案', '数据收集', '模型展�
 const maxIndex = texts.length - 1
 
 const section = ref(0)
-const titleShell = ref<HTMLElement | null>(null)
+const titleInner = ref<HTMLElement | null>(null)
+
+/** 与「角标/大标题」排版同步：位移动画结束后再切换，避免宽度与 text-align 瞬时变化干扰测量与观感 */
+const titleCompactTypo = ref(false)
 
 const isAnimating = ref(false)
 let titleAnim: JSAnimation | null = null
 
-const POSITION_DURATION_MS = 580
+const POSITION_DURATION_MS = 720
 const STEP_LOCK_MS = 380
 
 function isCornerSection(s: number) {
   return s >= 1
 }
 
-function applyTitleLayoutInstant(s: number) {
-  const el = titleShell.value
-  if (!el) return
-  titleAnim?.revert()
-  titleAnim = null
-
-  // 仅使用 style.transform，避免与 animejs 写入的 transform 以及 CSS translate/scale 独立属性叠加导致偏移
-  el.style.removeProperty('translate')
-  el.style.removeProperty('scale')
-
-  if (s === 0) {
-    el.style.left = '50%'
-    el.style.top = '50%'
-    el.style.transform = 'translate(-50%, -50%) scale(1)'
-  } else {
-    el.style.left = '1.5rem'
-    el.style.top = '1.5rem'
-    el.style.transform = 'translate(0, 0) scale(0.88)'
-  }
+function padPx() {
+  const rootFs = parseFloat(getComputedStyle(document.documentElement).fontSize || '16')
+  return rootFs * 1.5
 }
 
 function runTitlePositionTransition(prev: number, next: number) {
-  const el = titleShell.value
-  if (!el) return
+  const inner = titleInner.value
+  if (!inner) return
 
   const prevCorner = isCornerSection(prev)
   const nextCorner = isCornerSection(next)
@@ -52,23 +39,46 @@ function runTitlePositionTransition(prev: number, next: number) {
   titleAnim?.revert()
   titleAnim = null
 
-  const toCenter = next === 0
+  inner.style.removeProperty('translate')
+  inner.style.removeProperty('scale')
 
-  el.style.removeProperty('translate')
-  el.style.removeProperty('scale')
+  const toCorner = next >= 1
+  const pad = padPx()
 
-  titleAnim = animate(el, {
-    duration: POSITION_DURATION_MS,
-    ease: 'outCubic',
-    left: toCenter ? '50%' : '1.5rem',
-    top: toCenter ? '50%' : '1.5rem',
-    x: toCenter ? '-50%' : '0%',
-    y: toCenter ? '-50%' : '0%',
-    scale: toCenter ? 1 : 0.88,
-    onComplete: () => {
-      titleAnim = null
-      applyTitleLayoutInstant(next)
-    },
+  const startAnim = () => {
+    if (toCorner) {
+      const rect = inner.getBoundingClientRect()
+      const dx = pad - rect.left
+      const dy = pad - rect.top
+      titleAnim = animate(inner, {
+        duration: POSITION_DURATION_MS,
+        ease: 'inOutCubic',
+        x: [0, dx],
+        y: [0, dy],
+        scale: [1, 0.88],
+        onComplete: () => {
+          titleAnim = null
+          titleCompactTypo.value = next >= 1
+        },
+      })
+    } else {
+      titleAnim = animate(inner, {
+        duration: POSITION_DURATION_MS,
+        ease: 'inOutCubic',
+        x: 0,
+        y: 0,
+        scale: 1,
+        onComplete: () => {
+          titleAnim = null
+          titleCompactTypo.value = next >= 1
+        },
+      })
+    }
+  }
+
+  // 等 flex 布局与上一帧样式稳定后再量 rect，双向（去角标 / 回正中）共用同一套测量逻辑
+  requestAnimationFrame(() => {
+    requestAnimationFrame(startAnim)
   })
 }
 
@@ -104,21 +114,31 @@ function onWheel(e: WheelEvent) {
     runTitlePositionTransition(prev, next)
     releaseAnimLockAfter(POSITION_DURATION_MS)
   } else {
+    titleCompactTypo.value = next >= 1
     releaseAnimLockAfter(STEP_LOCK_MS)
   }
 }
 
+function resetTitleTransform() {
+  titleAnim?.revert()
+  titleAnim = null
+  const inner = titleInner.value
+  if (!inner) return
+  inner.style.removeProperty('transform')
+  inner.style.removeProperty('translate')
+  inner.style.removeProperty('scale')
+}
+
 onMounted(() => {
   nextTick(() => {
-    applyTitleLayoutInstant(section.value)
+    resetTitleTransform()
   })
   window.addEventListener('wheel', onWheel, { passive: false })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('wheel', onWheel)
-  titleAnim?.revert()
-  titleAnim = null
+  resetTitleTransform()
 })
 </script>
 
@@ -127,14 +147,18 @@ onBeforeUnmount(() => {
     <div class="hero__glow hero__glow--one" aria-hidden="true" />
     <div class="hero__glow hero__glow--two" aria-hidden="true" />
 
-    <h1 ref="titleShell" class="title-shell" :class="{ 'title-shell--hero': section === 0 }">
-      <TypewriterCursor
-        :texts="texts"
-        :index="section"
-        :char-interval-ms="100"
-        :cursor-blink-interval-ms="530"
-      />
-    </h1>
+    <div class="title-root">
+      <div ref="titleInner" class="title-root__mover">
+        <h1 class="title-shell" :class="{ 'title-shell--hero': !titleCompactTypo }">
+          <TypewriterCursor
+            :texts="texts"
+            :index="section"
+            :char-interval-ms="100"
+            :cursor-blink-interval-ms="530"
+          />
+        </h1>
+      </div>
+    </div>
 
     <div class="hero__content">
       <ScrollModuleContent :section="section" />
@@ -187,9 +211,22 @@ onBeforeUnmount(() => {
   background: radial-gradient(circle, #a3b899 0%, transparent 65%);
 }
 
-.title-shell {
+.title-root {
   position: fixed;
+  inset: 0;
   z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.title-root__mover {
+  transform-origin: top left;
+  will-change: transform;
+}
+
+.title-shell {
   margin: 0;
   max-width: min(90vw, 36rem);
   font-size: clamp(1.75rem, 5vw, 2.75rem);
@@ -198,13 +235,13 @@ onBeforeUnmount(() => {
   color: #3d5a42;
   line-height: 1.35;
   text-align: left;
-  pointer-events: none;
-  will-change: transform, left, top;
 }
 
 .title-shell--hero {
   text-align: center;
   max-width: min(92vw, 40rem);
+  /* 减少打字过程中宽度抖动对「居中」视觉的影响（flex 仍会以当前盒宽居中） */
+  min-width: min(16rem, 88vw);
 }
 
 .hero__content {
