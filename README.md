@@ -15,17 +15,23 @@
 
 ### Web
 
-1. vue页面编译
+在仓库根目录安装依赖并构建（Bun 工作区，子包在 `packages/` 下）：
+
 ```bash
-cd web
 bun install
+bun run build:web
+bun run build:server
+```
+
+也可进入子目录单独执行，例如：
+
+```bash
+cd packages/web
 bun run build
 ```
 
-2. 服务器编译
 ```bash
-cd web-server
-bun install
+cd packages/web-server
 bun run build
 ```
 
