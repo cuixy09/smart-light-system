@@ -4,7 +4,7 @@
   "workspaces": ["packages/web", "packages/web-server"],
   "scripts": {
     "dev": "bun run --cwd '*' dev",
-    "dev:web": "bun run --cwd web dev",
+    "dev:web": "bun run --cwd packages/web dev",
     "dev:server": "bun run --cwd packages/web-server dev",
     "build:web": "bun run --cwd packages/web build",
     "build:server": "bun run --cwd packages/web-server build",
