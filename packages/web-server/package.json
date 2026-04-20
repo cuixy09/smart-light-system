@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "bun build --target bun --compile index.ts --outfile dist/server.exe",
+    "build": "bun build --target bun --minify --sourcemap --bytecode --compile index.ts --outfile dist/server.exe",
     "start": "bun index.ts",
     "start:exe": "dist/server.exe",
     "dev": "bun run --watch index.ts"

@@ -2,28 +2,12 @@ import express from "express";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-function appRootDir(): string {
-  const metaDir = import.meta.dir;
-  const metaPath =
-    typeof import.meta === "object" &&
-    import.meta !== null &&
-    "path" in import.meta &&
-    typeof (import.meta as { path: unknown }).path === "string"
-      ? (import.meta as { path: string }).path
-      : "";
-  const inBunVirtualRoot =
-    metaDir.includes("~BUN") ||
-    metaDir.includes("$bunfs") ||
-    metaPath.includes("$bunfs") ||
-    metaPath.includes("~BUN");
-  if (inBunVirtualRoot) {
-    return dirname(process.execPath);
-  }
-  return metaDir;
-}
-
-const appRoot = appRootDir();
-const staticRoot = join(appRoot, "web");
+// @ts-ignore - Bun runtime
+const appRoot = import.meta.dir;
+// const isBunFs = appRoot.includes("$bunfs") || appRoot.includes("~BUN");
+// const rootDir = isBunFs ? dirname(process.execPath) : appRoot;
+const rootDir = appRoot;
+const staticRoot = join(rootDir, "web");
 const indexHtml = join(staticRoot, "index.html");
 
 if (!existsSync(indexHtml)) {
@@ -38,6 +22,60 @@ const startPort = Number(process.env.PORT) || 3000;
 const maxPortAttempts = 100;
 const portFromEnv =
   process.env.PORT !== undefined && process.env.PORT !== "";
+
+app.use(express.json());
+
+app.post("/api/cal_brightness", (req, res) => {
+  const { active, hour, minute, aqi, sunrise, sunset } = req.body;
+
+  if (!active) {
+    res.json({ brightness: 0, isNight: false });
+    return;
+  }
+
+  const parseTimeToMin = (time: string): number => {
+    const parts = time.split(":").map(Number);
+    const h = parts[0] ?? 0;
+    const m = parts[1] ?? 0;
+    return h * 60 + m;
+  };
+
+  const sunriseMin = parseTimeToMin(sunrise);
+  const sunsetMin = parseTimeToMin(sunset);
+  const curMin = hour * 60 + minute;
+
+  const isNight = curMin >= sunsetMin || curMin < sunriseMin;
+
+  if (!isNight) {
+    res.json({ brightness: 0, isNight: false });
+    return;
+  }
+
+  let elapsed: number;
+  if (curMin >= sunsetMin) {
+    elapsed = curMin - sunsetMin;
+  } else {
+    elapsed = (24 * 60 - sunsetMin) + curMin;
+  }
+
+  const nightTime = (24 * 60 - sunsetMin) + sunriseMin;
+  const lambda = elapsed / nightTime;
+  const base = 255 * (1 - 2 * Math.abs(lambda - 0.5));
+
+  let aqiFac = 1 + (aqi - 50) / 200;
+  if (aqiFac < 0.5) aqiFac = 0.5;
+  if (aqiFac > 2.0) aqiFac = 2.0;
+
+  let brightness = Math.round(base * aqiFac);
+  if (brightness > 255) brightness = 255;
+  if (brightness < 0) brightness = 0;
+
+  res.json({
+    brightness,
+    isNight: true,
+    debug: { curMin, sunriseMin, sunsetMin, elapsed, nightTime, lambda, base, aqiFac },
+  });
+});
 
 app.use(express.static(staticRoot));
 
