@@ -3,13 +3,13 @@
   "private": true,
   "workspaces": ["packages/web", "packages/web-server"],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
-    "dev:web": "bun run --filter web dev",
-    "dev:server": "bun run --filter web-server dev",
-    "build:web": "bun run --filter web build",
-    "build:server": "bun run --filter web-server build",
+    "dev": "bun run --cwd '*' dev",
+    "dev:web": "bun run --cwd packages/web dev",
+    "dev:server": "bun run --cwd packages/web-server dev",
+    "build:web": "bun run --cwd packages/web build",
+    "build:server": "bun run --cwd packages/web-server build",
     "build": "bun run build:web && bun run build:server",
-    "start:server": "bun run --filter web-server start",
-    "start:server:exe": "bun run --filter web-server start:exe"
+    "start:server": "bun run --cwd packages/web-server start",
+    "start:server:exe": "bun run --cwd packages/web-server start:exe"
   }
 }

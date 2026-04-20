@@ -1,29 +1,11 @@
 import express from "express";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-function appRootDir(): string {
-  const metaDir = import.meta.dir;
-  const metaPath =
-    typeof import.meta === "object" &&
-    import.meta !== null &&
-    "path" in import.meta &&
-    typeof (import.meta as { path: unknown }).path === "string"
-      ? (import.meta as { path: string }).path
-      : "";
-  const inBunVirtualRoot =
-    metaDir.includes("~BUN") ||
-    metaDir.includes("$bunfs") ||
-    metaPath.includes("$bunfs") ||
-    metaPath.includes("~BUN");
-  if (inBunVirtualRoot) {
-    return dirname(process.execPath);
-  }
-  return metaDir;
-}
-
-const appRoot = appRootDir();
-const staticRoot = join(appRoot, "web");
+// exe 运行时 process.execPath 指向 exe 自身
+const rootDir = dirname(process.execPath);
+const appRoot = rootDir;
+const staticRoot = join(rootDir, "web");
 const indexHtml = join(staticRoot, "index.html");
 
 if (!existsSync(indexHtml)) {
@@ -38,6 +20,103 @@ const startPort = Number(process.env.PORT) || 3000;
 const maxPortAttempts = 100;
 const portFromEnv =
   process.env.PORT !== undefined && process.env.PORT !== "";
+
+app.use(express.json());
+
+app.post("/api/cal_brightness", (req, res) => {
+  const { active, hour, minute, aqi, sunrise, sunset } = req.body;
+
+  if (!active) {
+    res.json({ brightness: 0, isNight: false });
+    return;
+  }
+
+  const parseTimeToMin = (time: string): number => {
+    const parts = time.split(":").map(Number);
+    const h = parts[0] ?? 0;
+    const m = parts[1] ?? 0;
+    return h * 60 + m;
+  };
+
+  const sunriseMin = parseTimeToMin(sunrise);
+  const sunsetMin = parseTimeToMin(sunset);
+  const curMin = hour * 60 + minute;
+
+  const isNight = curMin >= sunsetMin || curMin < sunriseMin;
+
+  if (!isNight) {
+    res.json({ brightness: 0, isNight: false });
+    return;
+  }
+
+  let elapsed: number;
+  if (curMin >= sunsetMin) {
+    elapsed = curMin - sunsetMin;
+  } else {
+    elapsed = (24 * 60 - sunsetMin) + curMin;
+  }
+
+  const nightTime = (24 * 60 - sunsetMin) + sunriseMin;
+  const lambda = elapsed / nightTime;
+  const base = 255 * (1 - 2 * Math.abs(lambda - 0.5));
+
+  let aqiFac = 1 + (aqi - 50) / 200;
+  if (aqiFac < 0.5) aqiFac = 0.5;
+  if (aqiFac > 2.0) aqiFac = 2.0;
+
+  let brightness = Math.round(base * aqiFac);
+  if (brightness > 255) brightness = 255;
+  if (brightness < 0) brightness = 0;
+
+  res.json({
+    brightness,
+    isNight: true,
+    debug: { curMin, sunriseMin, sunsetMin, elapsed, nightTime, lambda, base, aqiFac },
+  });
+});
+
+const MANUAL_DATA_FILE = join(rootDir, "manual_data.json");
+
+function readManualData(): Record<string, unknown> | null {
+  if (!existsSync(MANUAL_DATA_FILE)) return null;
+  try {
+    return JSON.parse(readFileSync(MANUAL_DATA_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeManualData(data: Record<string, unknown>): void {
+  writeFileSync(MANUAL_DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+app.post("/api/set_manual", (req, res) => {
+  const { active, date, hour, minute, aqi, sunrise, sunset } = req.body;
+
+  if (typeof active !== "boolean") {
+    res.status(400).json({ error: "active must be a boolean" });
+    return;
+  }
+
+  if (!date || typeof date !== "string") {
+    res.status(400).json({ error: "date is required" });
+    return;
+  }
+
+  const data = { active, date, hour, minute, aqi, sunrise, sunset };
+  writeManualData(data);
+
+  res.json({ success: true, data });
+});
+
+app.get("/api/get_manual", (req, res) => {
+  const data = readManualData();
+  if (!data || !(data as Record<string, unknown>).active) {
+    res.json({ active: false });
+    return;
+  }
+  res.json(data);
+});
 
 app.use(express.static(staticRoot));
 

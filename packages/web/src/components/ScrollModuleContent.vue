@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import BrightnessCalculator from './BrightnessCalculator.vue'
+
 defineProps<{
   section: number
 }>()
@@ -25,11 +27,7 @@ defineProps<{
         <p class="scroll-module__desc">
           将采集数据输入节能与调度模型，输出可解释的推荐策略与可视化结果，便于评估与落地。
         </p>
-        <ul class="scroll-module__list">
-          <li>负荷预测与开灯策略</li>
-          <li>节能效果对比</li>
-          <li>可交互的结果视图（占位）</li>
-        </ul>
+        <BrightnessCalculator />
       </div>
     </div>
   </div>
