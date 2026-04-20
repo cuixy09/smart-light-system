@@ -1,12 +1,10 @@
 import express from "express";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-// @ts-ignore - Bun runtime
-const appRoot = import.meta.dir;
-// const isBunFs = appRoot.includes("$bunfs") || appRoot.includes("~BUN");
-// const rootDir = isBunFs ? dirname(process.execPath) : appRoot;
-const rootDir = appRoot;
+// exe 运行时 process.execPath 指向 exe 自身
+const rootDir = dirname(process.execPath);
+const appRoot = rootDir;
 const staticRoot = join(rootDir, "web");
 const indexHtml = join(staticRoot, "index.html");
 
@@ -75,6 +73,49 @@ app.post("/api/cal_brightness", (req, res) => {
     isNight: true,
     debug: { curMin, sunriseMin, sunsetMin, elapsed, nightTime, lambda, base, aqiFac },
   });
+});
+
+const MANUAL_DATA_FILE = join(rootDir, "manual_data.json");
+
+function readManualData(): Record<string, unknown> | null {
+  if (!existsSync(MANUAL_DATA_FILE)) return null;
+  try {
+    return JSON.parse(readFileSync(MANUAL_DATA_FILE, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+
+function writeManualData(data: Record<string, unknown>): void {
+  writeFileSync(MANUAL_DATA_FILE, JSON.stringify(data, null, 2));
+}
+
+app.post("/api/set_manual", (req, res) => {
+  const { active, date, hour, minute, aqi, sunrise, sunset } = req.body;
+
+  if (typeof active !== "boolean") {
+    res.status(400).json({ error: "active must be a boolean" });
+    return;
+  }
+
+  if (!date || typeof date !== "string") {
+    res.status(400).json({ error: "date is required" });
+    return;
+  }
+
+  const data = { active, date, hour, minute, aqi, sunrise, sunset };
+  writeManualData(data);
+
+  res.json({ success: true, data });
+});
+
+app.get("/api/get_manual", (req, res) => {
+  const data = readManualData();
+  if (!data || !(data as Record<string, unknown>).active) {
+    res.json({ active: false });
+    return;
+  }
+  res.json(data);
 });
 
 app.use(express.static(staticRoot));

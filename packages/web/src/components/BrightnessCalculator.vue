@@ -26,6 +26,8 @@ const result = ref<{
   }
 } | null>(null)
 const error = ref<string | null>(null)
+const saved = ref(false)
+const saveError = ref<string | null>(null)
 
 const brightnessLevel = computed(() => {
   if (!result.value) return 0
@@ -45,6 +47,8 @@ async function calculate() {
   loading.value = true
   error.value = null
   result.value = null
+  saved.value = false
+  saveError.value = null
 
   try {
     const response = await axios.post('/api/cal_brightness', {
@@ -57,6 +61,22 @@ async function calculate() {
       sunset: sunset.value,
     })
     result.value = response.data
+
+    // 保存手动设置
+    try {
+      await axios.post('/api/set_manual', {
+        active: active.value,
+        date: date.value,
+        hour: hour.value,
+        minute: minute.value,
+        aqi: aqi.value,
+        sunrise: sunrise.value,
+        sunset: sunset.value,
+      })
+      saved.value = true
+    } catch {
+      saveError.value = '数据已计算但保存失败'
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : '请求失败'
   } finally {
@@ -115,6 +135,9 @@ function padZero(n: number) {
     </div>
 
     <div v-if="error" class="calc__error">{{ error }}</div>
+
+    <div v-if="saved" class="calc__saved">设置已保存</div>
+    <div v-if="saveError" class="calc__save-error">{{ saveError }}</div>
 
     <div v-if="result" class="calc__result">
       <div class="calc__brightness-bar">
@@ -242,6 +265,24 @@ function padZero(n: number) {
   border-radius: 0.4rem;
   background: #fde8e8;
   color: #c53030;
+  font-size: 0.875rem;
+}
+
+.calc__saved {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.4rem;
+  background: #e6f4ea;
+  color: #2e7d32;
+  font-size: 0.875rem;
+}
+
+.calc__save-error {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.4rem;
+  background: #fff3e0;
+  color: #e65100;
   font-size: 0.875rem;
 }
 
