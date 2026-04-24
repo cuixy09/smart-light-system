@@ -32,12 +32,11 @@
 
 ### Web
 
-在仓库根目录安装依赖并构建（Bun 工作区，子包在 `packages/` 下）：
+在仓库根目录安装依赖并构建（最推荐，Bun 工作区，子包在 `packages/` 下）：
 
 ```bash
 bun install
-bun run build:web
-bun run build:server
+bun run build
 ```
 
 也可进入子目录单独执行，例如：
