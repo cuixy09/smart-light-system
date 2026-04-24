@@ -4,13 +4,11 @@ import {
   computed,
   nextTick,
   onBeforeUnmount,
+  onMounted,
   ref,
   watch,
 } from 'vue'
-import {
-  type CollectionTimeSeriesRow,
-  mockCollectionSeries,
-} from '../mocks/dataCollectionSeries'
+import { type CollectionTimeSeriesRow } from '../mocks/dataCollectionSeries'
 
 const props = withDefaults(
   defineProps<{
@@ -19,9 +17,42 @@ const props = withDefaults(
   { rows: undefined },
 )
 
-const data = computed(
-  () => props.rows ?? mockCollectionSeries(),
-)
+const remoteRows = ref<CollectionTimeSeriesRow[] | undefined>(undefined)
+const fetchFailed = ref(false)
+
+const data = computed(() => {
+  if (props.rows !== undefined) return props.rows
+  if (fetchFailed.value) return []
+  return remoteRows.value ?? []
+})
+
+onMounted(async () => {
+  if (props.rows !== undefined) return
+  try {
+    const res = await fetch('/api/collection_timeseries')
+    const body: unknown = await res.json()
+    const o = body as { ok?: boolean; rows?: CollectionTimeSeriesRow[] }
+    if (
+      o
+      && o.ok === true
+      && Array.isArray(o.rows)
+      && o.rows.every(
+        (r) =>
+          r
+          && typeof r === 'object'
+          && typeof r.date === 'string',
+      )
+    ) {
+      remoteRows.value = o.rows
+    }
+    else {
+      fetchFailed.value = true
+    }
+  }
+  catch {
+    fetchFailed.value = true
+  }
+})
 
 const CHART = {
   vbW: 400,
@@ -454,9 +485,17 @@ function fmtSw(n: number | null) {
     class="dclc"
   >
     <p class="dclc__title">
-      时序环境指标（示例假数据）
+      时序环境指标
+    </p>
+    <p
+      v-if="fetchFailed"
+      class="dclc__error"
+      role="alert"
+    >
+      无法获取数据
     </p>
     <svg
+      v-else
       ref="svgRef"
       class="dclc__svg"
       :viewBox="`0 0 ${vbW} ${vbH}`"
@@ -663,6 +702,7 @@ function fmtSw(n: number | null) {
       />
     </svg>
     <ul
+      v-if="!fetchFailed"
       class="dclc__legend"
       aria-hidden="true"
     >
@@ -672,6 +712,7 @@ function fmtSw(n: number | null) {
       <li class="set">日落</li>
     </ul>
     <div
+      v-if="!fetchFailed"
       v-show="activeIndex != null"
       ref="tooltipRef"
       class="dclc__tip"
@@ -707,6 +748,13 @@ function fmtSw(n: number | null) {
   font-weight: 500;
   letter-spacing: 0.04em;
   color: #4a6350;
+}
+
+.dclc__error {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #c62828;
 }
 
 .dclc__svg {
