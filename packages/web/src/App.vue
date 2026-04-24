@@ -2,6 +2,7 @@
 import { animate, type JSAnimation } from 'animejs'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ScrollModuleContent from './components/ScrollModuleContent.vue'
+import SectionTimeline from './components/SectionTimeline.vue'
 import TypewriterCursor from './components/TypewriterCursor.vue'
 
 const texts: string[] = ['路灯节能控制方案', '数据收集', '模型展示']
@@ -213,6 +214,8 @@ onBeforeUnmount(() => {
       <ScrollModuleContent :section="section" />
       <p v-if="section === 0" class="hero__subtitle">智慧照明 · 节能与可视化</p>
     </div>
+
+    <SectionTimeline :labels="texts" :active-index="section" />
 
     <div v-if="section === 0" class="hero__scroll-hint-outer">
       <div ref="scrollHintInner" class="hero__scroll-hint-inner" role="note">
