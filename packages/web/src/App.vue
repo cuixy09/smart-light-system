@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { animate, type JSAnimation } from 'animejs'
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ScrollModuleContent from './components/ScrollModuleContent.vue'
 import TypewriterCursor from './components/TypewriterCursor.vue'
 
@@ -9,12 +9,48 @@ const maxIndex = texts.length - 1
 
 const section = ref(0)
 const titleInner = ref<HTMLElement | null>(null)
+const scrollHintInner = ref<HTMLElement | null>(null)
 
 /** 与「角标/大标题」排版同步：位移动画结束后再切换，避免宽度与 text-align 瞬时变化干扰测量与观感 */
 const titleCompactTypo = ref(false)
 
 const isAnimating = ref(false)
 let titleAnim: JSAnimation | null = null
+let scrollHintAnim: JSAnimation | null = null
+
+const SCROLL_HINT_BOB_MS = 1400
+
+function prefersReducedMotion() {
+  if (typeof window === 'undefined') return false
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function stopScrollHintAnim() {
+  scrollHintAnim?.revert()
+  scrollHintAnim = null
+  const el = scrollHintInner.value
+  if (el) {
+    el.style.removeProperty('transform')
+    el.style.removeProperty('translate')
+  }
+}
+
+function startScrollHintAnim() {
+  stopScrollHintAnim()
+  if (section.value !== 0) return
+  if (prefersReducedMotion()) return
+  const el = scrollHintInner.value
+  if (!el) return
+  el.style.removeProperty('transform')
+  el.style.removeProperty('translate')
+  scrollHintAnim = animate(el, {
+    y: [0, 6],
+    duration: SCROLL_HINT_BOB_MS,
+    ease: 'inOutCubic',
+    loop: true,
+    alternate: true,
+  })
+}
 
 const POSITION_DURATION_MS = 720
 const STEP_LOCK_MS = 380
@@ -129,15 +165,28 @@ function resetTitleTransform() {
   inner.style.removeProperty('scale')
 }
 
+watch(
+  () => section.value,
+  (s) => {
+    if (s !== 0) {
+      stopScrollHintAnim()
+      return
+    }
+    void nextTick(() => startScrollHintAnim())
+  },
+)
+
 onMounted(() => {
   nextTick(() => {
     resetTitleTransform()
+    if (section.value === 0) startScrollHintAnim()
   })
   window.addEventListener('wheel', onWheel, { passive: false })
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('wheel', onWheel)
+  stopScrollHintAnim()
   resetTitleTransform()
 })
 </script>
@@ -163,6 +212,29 @@ onBeforeUnmount(() => {
     <div class="hero__content">
       <ScrollModuleContent :section="section" />
       <p v-if="section === 0" class="hero__subtitle">智慧照明 · 节能与可视化</p>
+    </div>
+
+    <div v-if="section === 0" class="hero__scroll-hint-outer">
+      <div ref="scrollHintInner" class="hero__scroll-hint-inner" role="note">
+        <span class="hero__scroll-hint-text">滚动鼠标滚轮以继续</span>
+        <svg
+          class="hero__scroll-hint-icon"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path
+            d="M12 5v14M6 10l6 5 6-5"
+            stroke="currentColor"
+            stroke-width="1.9"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
     </div>
   </main>
 </template>
@@ -263,6 +335,38 @@ onBeforeUnmount(() => {
   font-weight: 400;
   color: #6b8570;
   letter-spacing: 0.12em;
+}
+
+.hero__scroll-hint-outer {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(1.25rem, 4vh, 2.25rem);
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.hero__scroll-hint-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #6b8570;
+  letter-spacing: 0.1em;
+  will-change: transform;
+}
+
+.hero__scroll-hint-text {
+  white-space: nowrap;
+}
+
+.hero__scroll-hint-icon {
+  display: block;
+  flex-shrink: 0;
+  color: #6b8570;
+  opacity: 0.9;
 }
 </style>
 

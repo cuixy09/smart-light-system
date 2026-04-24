@@ -8,7 +8,7 @@
     "dev:server": "bun run --cwd packages/web-server dev",
     "build:web": "bun run --cwd packages/web build",
     "build:server": "bun run --cwd packages/web-server build",
-    "build": "bun run build:web && bun run build:server",
+    "build": "bun run build:web && bun run build:server && powershell -Command \"Remove-Item -Recurse -Force packages/web-server/dist/web -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Path packages/web-server/dist/web -Force | Out-Null; Copy-Item -Path packages/web/dist/* -Destination packages/web-server/dist/web -Recurse; Copy-Item -Path 1.csv -Destination packages/web-server/dist/1.csv\"",
     "start:server": "bun run --cwd packages/web-server start",
     "start:server:exe": "bun run --cwd packages/web-server start:exe"
   }

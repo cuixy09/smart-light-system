@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BrightnessCalculator from './BrightnessCalculator.vue'
+import DataCollectionLineChart from './DataCollectionLineChart.vue'
 
 defineProps<{
   section: number
@@ -19,6 +20,7 @@ defineProps<{
           <li>环境光照与人流热度</li>
           <li>设备状态与告警</li>
         </ul>
+        <DataCollectionLineChart class="scroll-module__chart" />
       </div>
     </div>
     <div v-show="section === 2" class="scroll-module__panel">
@@ -73,6 +75,10 @@ defineProps<{
   font-size: 0.875rem;
   line-height: 1.7;
   color: #5a7360;
+}
+
+.scroll-module__chart {
+  margin-top: 1rem;
 }
 
 @keyframes scroll-module-fade {

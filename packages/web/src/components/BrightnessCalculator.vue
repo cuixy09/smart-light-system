@@ -2,7 +2,6 @@
 import axios from 'axios'
 import { ref, computed } from 'vue'
 
-const active = ref(true)
 const date = ref(new Date().toISOString().split('T')[0])
 const hour = ref(new Date().getHours())
 const minute = ref(new Date().getMinutes())
@@ -52,7 +51,7 @@ async function calculate() {
 
   try {
     const response = await axios.post('/api/cal_brightness', {
-      active: active.value,
+      active: true,
       date: date.value,
       hour: hour.value,
       minute: minute.value,
@@ -65,7 +64,7 @@ async function calculate() {
     // 保存手动设置
     try {
       await axios.post('/api/set_manual', {
-        active: active.value,
+        active: true,
         date: date.value,
         hour: hour.value,
         minute: minute.value,
@@ -92,11 +91,6 @@ function padZero(n: number) {
 <template>
   <div class="calc">
     <div class="calc__controls">
-      <label class="calc__row">
-        <span class="calc__label">启用</span>
-        <input type="checkbox" v-model="active" class="calc__checkbox" />
-      </label>
-
       <label class="calc__row">
         <span class="calc__label">日期</span>
         <input type="date" v-model="date" class="calc__input" />
@@ -209,12 +203,6 @@ function padZero(n: number) {
 
 .calc__input--time {
   width: 7rem;
-}
-
-.calc__checkbox {
-  width: 1.1rem;
-  height: 1.1rem;
-  accent-color: #7a9a7d;
 }
 
 .calc__time-group {
