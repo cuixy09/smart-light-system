@@ -94,6 +94,17 @@ function parseNumberCell(s: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** 短波列可能为纯数字或带单位如 `2.07MJ/m²`，仅取前导十进制数 */
+function parseShortwaveCell(s: string): number | null {
+  const t = s.trim();
+  if (!t) return null;
+  if (/^nan$/i.test(t)) return null;
+  const m = t.match(/^-?\d+(?:\.\d+)?/);
+  if (!m) return null;
+  const n = Number(m[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
 function splitCsvLine(line: string): string[] {
   return line.split(",").map((c) => c.trim());
 }
@@ -132,7 +143,7 @@ function readCollectionCsv(): CollectionTimeSeriesRow[] | null {
       sunriseMinutes: parseTimeCell(cells[iSunrise] ?? ""),
       sunsetMinutes: parseTimeCell(cells[iSunset] ?? ""),
       aqi: parseNumberCell(cells[iAqi] ?? ""),
-      shortwave: parseNumberCell(cells[iSw] ?? ""),
+      shortwave: parseShortwaveCell(cells[iSw] ?? ""),
     });
   }
 
