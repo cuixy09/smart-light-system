@@ -33,3 +33,5 @@ Scripts
 *.eep
 build-*/
 *.ino.with_bootloader*
+
+settings.json
