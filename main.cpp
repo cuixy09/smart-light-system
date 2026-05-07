@@ -15,7 +15,7 @@
 #include <utility>
 
 const double pi = 3.1415926535; // 不要求精度，常记的 PI 值就够用
-const std::string arduino_port = "\\\\.\\COM5"; // 实际开发中的端口号，可自行修改
+std::string arduino_port = "\\\\.\\"; // 输入端口号
 
 PyObject* g_py_func = nullptr;
 // 定义 JSON 结构体
@@ -138,12 +138,14 @@ bool call_py(const std::string& date_str, int& sr, int& ss, int& aqi) {
         PyObject* py_sr = PyTuple_GetItem(pResult, 0);
         PyObject* py_ss = PyTuple_GetItem(pResult, 1);
         PyObject* py_aqi = PyTuple_GetItem(pResult, 2);
-        std::string sr_str = PyUnicode_AsUTF8(py_sr);
-        std::string ss_str = PyUnicode_AsUTF8(py_ss);
-        aqi = static_cast<int>(PyLong_AsLong(py_aqi));
-        sr = str_to_min(sr_str);
-        ss = str_to_min(ss_str);
-        ok = true;
+        if (py_sr != Py_None && py_ss != Py_None && py_aqi != Py_None) {
+            std::string sr_str = PyUnicode_AsUTF8(py_sr);
+            std::string ss_str = PyUnicode_AsUTF8(py_ss);
+            aqi = static_cast<int>(PyLong_AsLong(py_aqi));
+            sr = str_to_min(sr_str);
+            ss = str_to_min(ss_str);
+            ok = true;
+        }
     }
     Py_DECREF(pResult);
     return ok;
@@ -163,12 +165,12 @@ int cal_pwm(int cur_min, int sr, int ss, int aqi) {
     else elapsed = (24 * 60 - ss) + cur_min; // 后半夜
     int night_time = (24 * 60 - ss) + sr; // 总时长
     double lambda = elapsed * 1.0 / night_time; // 各种计算
-    double base = 255.0 * (1.0 - 2.0 * std::abs(lambda - 0.5));
+    double base = 200.0 * (1.0 - 2.0 * std::abs(lambda - 0.5));
     double aqi_fac = 1.0 + (aqi - 50) / 200.0;
     if (aqi_fac < 0.5) aqi_fac = 0.5; // 限定因子修正
     if (aqi_fac > 2.0) aqi_fac = 2.0;
     int pwm = static_cast<int>(base * aqi_fac);
-    if (pwm > 255) pwm = 255; // 防止计算结果溢出
+    if (pwm > 200) pwm = 200; // 防止计算结果溢出
     if (pwm < 0) pwm = 0;
     return pwm;
 }
@@ -226,6 +228,11 @@ int main() {
         return 1;
     }
 	
+    std::string port = "COM3";
+    std::cout << "Please Enter A Port(COMX):";
+    std::cin >> port;
+    arduino_port += port;
+
     HANDLE hSerial = init_arduino_serial(arduino_port);
 
     int pre_aqi = 50; // 给一个初始值，防止一直失败
